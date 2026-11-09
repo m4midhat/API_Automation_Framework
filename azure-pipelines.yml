@@ -1,0 +1,55 @@
+# Azure DevOps pipeline for the REST API Automation Framework.
+#
+# Demonstrates reading environment/credential values entirely from the CLI (via -D system
+# properties sourced from pipeline parameters and a variable group holding the secrets), so the
+# pipeline needs no code changes to target a different environment or rotate credentials.
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+parameters:
+  - name: testEnv
+    displayName: Environment to run against
+    type: string
+    default: qa
+    values:
+      - qa
+      - staging
+
+variables:
+  - group: rest-api-framework-secrets   # must define ENCRYPTION_KEY and REQRES_API_KEY as secret variables
+
+steps:
+  - task: JavaToolInstaller@0
+    inputs:
+      versionSpec: '17'
+      jdkArchitectureOption: 'x64'
+      jdkSourceOption: 'PreInstalled'
+
+  - script: mvn -q -DskipTests compile
+    displayName: 'Compile'
+
+  - script: |
+      mvn test \
+        -Denv=${{ parameters.testEnv }} \
+        -DencryptionKey=$(ENCRYPTION_KEY) \
+        -Dreqres.api.key=$(REQRES_API_KEY)
+    displayName: 'Run API test suite'
+
+  - script: mvn allure:report
+    displayName: 'Generate Allure report'
+    condition: always()
+
+  - task: PublishTestResults@2
+    condition: always()
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'target/surefire-reports/*.xml'
+
+  - task: PublishPipelineArtifact@1
+    condition: always()
+    inputs:
+      targetPath: 'target/site/allure-maven-plugin'
+      artifact: 'allure-report'

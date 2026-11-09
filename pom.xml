@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.entertainer.qa</groupId>
+    <artifactId>rest-api-automation-framework</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>REST API Automation Framework</name>
+    <description>RestAssured + TestNG API automation framework exercising public open-source
+        REST APIs (ReqRes, Restful-Booker, JSONPlaceholder) for portfolio demonstration.</description>
+
+    <properties>
+        <!-- Project metadata -->
+        <author>Midhat Rosull Chughtai</author>
+        <author.email>m4midhat@gmail.com</author.email>
+        <author.github>github.com/m4midhat</author.github>
+        <project.purpose>API Test cases reporting</project.purpose>
+
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <rest-assured.version>5.5.1</rest-assured.version>
+        <testng.version>7.10.2</testng.version>
+        <allure.version>2.29.1</allure.version>
+        <jackson.version>2.18.2</jackson.version>
+
+        <!-- Default values, overridable from the CLI for local runs and CI/CD pipelines:
+             mvn test -Denv=staging -DencryptionKey=*** -Dsuite=testng.xml -->
+        <env>qa</env>
+        <suite>testng.xml</suite>
+        <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
+
+        <!-- Convenience flags frequently toggled from the CLI without editing this file:
+             mvn verify -DskipTests            (compile everything, skip execution)
+             mvn install -Dmaven.test.skip=true (skip both compiling and running tests) -->
+        <skipTests>false</skipTests>
+        <maven.test.skip>false</maven.test.skip>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.rest-assured</groupId>
+                <artifactId>rest-assured-bom</artifactId>
+                <version>${rest-assured.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- API testing -->
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>json-schema-validator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>json-path</artifactId>
+        </dependency>
+
+        <!-- JSON (de)serialization used by RestAssured object mapping -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <!-- Test runner -->
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>${testng.version}</version>
+        </dependency>
+
+        <!-- Reporting -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-testng</artifactId>
+            <version>${allure.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-rest-assured</artifactId>
+            <version>${allure.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>rest-api-automation-framework</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+                <configuration>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>${suite}</suiteXmlFile>
+                    </suiteXmlFiles>
+                    <!-- All -D system properties on the `mvn` command line (env, encryptionKey,
+                         booker.auth.username, booker.auth.password, etc.) are forwarded as-is to
+                         this forked JVM, which is what lets a CI/CD pipeline inject them without
+                         touching the code.
+                         Suite-wide listeners (Allure, retry wiring, suite/test logging) are
+                         registered in testng.xml's own <listeners> block instead of here, so the
+                         suite behaves identically run from Maven, an IDE, or the TestNG CLI. -->
+                    <systemPropertyVariables>
+                        <!-- Without this, allure-testng writes to ./allure-results (relative to
+                             the working directory) instead of target/, scattering raw results
+                             outside the build directory. -->
+                        <allure.results.directory>${allure.results.directory}</allure.results.directory>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>io.qameta.allure</groupId>
+                <artifactId>allure-maven</artifactId>
+                <version>2.12.0</version>
+                <configuration>
+                    <!-- allure-commandline (the report generator binary this plugin downloads) is
+                         versioned independently of the allure-testng/allure-rest-assured library
+                         jars above - pin it to a version that actually exists as a commandline
+                         distribution, not ${allure.version}. -->
+                    <reportVersion>2.46.1</reportVersion>
+                    <resultsDirectory>${allure.results.directory}</resultsDirectory>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

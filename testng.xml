@@ -1,0 +1,60 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!--
+    parallel="tests": the three <test> blocks below (ReqRes, Restful-Booker, JSONPlaceholder) run
+    concurrently, one worker thread each, since they hit three independent hosts. Classes *within*
+    a block run sequentially - Restful-Booker in particular is a single free-tier demo instance
+    that returns non-JSON error pages under concurrent load, so it must not be hammered by more
+    than one thread at a time.
+-->
+<suite name="REST API Automation Suite" parallel="tests" thread-count="3" verbose="1">
+
+    <!--
+        All suite-wide listeners are registered here rather than in pom.xml, so the suite behaves
+        the same whether it's run via `mvn test`, an IDE's TestNG runner, or `java org.testng.TestNG
+        testng.xml` directly.
+          - AllureTestNg               : Allure report generation
+          - RetryAnnotationTransformer : wires RetryAnalyzer onto every @Test automatically
+          - SuiteLifecycleListener     : suite start/finish logging + Allure environment.properties
+          - TestExecutionListener      : per-test start/pass/fail/skip console logging
+    -->
+    <listeners>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+        <listener class-name="com.entertainer.qa.listeners.RetryAnnotationTransformer"/>
+        <listener class-name="com.entertainer.qa.listeners.SuiteLifecycleListener"/>
+        <listener class-name="com.entertainer.qa.listeners.TestExecutionListener"/>
+    </listeners>
+
+    <test name="ReqRes API Tests">
+        <classes>
+            <class name="com.entertainer.qa.tests.reqres.ListUsersTests"/>
+            <class name="com.entertainer.qa.tests.reqres.SingleUserTests"/>
+            <class name="com.entertainer.qa.tests.reqres.CreateUserTests"/>
+            <class name="com.entertainer.qa.tests.reqres.UpdateUserTests"/>
+            <class name="com.entertainer.qa.tests.reqres.DeleteUserTests"/>
+            <class name="com.entertainer.qa.tests.reqres.RegisterTests"/>
+            <class name="com.entertainer.qa.tests.reqres.LoginTests"/>
+        </classes>
+    </test>
+
+    <test name="Restful-Booker API Tests">
+        <classes>
+            <class name="com.entertainer.qa.tests.booker.HealthCheckTests"/>
+            <class name="com.entertainer.qa.tests.booker.AuthTests"/>
+            <class name="com.entertainer.qa.tests.booker.CreateBookingTests"/>
+            <class name="com.entertainer.qa.tests.booker.GetBookingTests"/>
+            <class name="com.entertainer.qa.tests.booker.UpdateBookingTests"/>
+            <class name="com.entertainer.qa.tests.booker.DeleteBookingTests"/>
+        </classes>
+    </test>
+
+    <test name="JSONPlaceholder API Tests">
+        <classes>
+            <class name="com.entertainer.qa.tests.jsonplaceholder.GetPostsTests"/>
+            <class name="com.entertainer.qa.tests.jsonplaceholder.CreatePostTests"/>
+            <class name="com.entertainer.qa.tests.jsonplaceholder.UpdatePostTests"/>
+            <class name="com.entertainer.qa.tests.jsonplaceholder.DeletePostTests"/>
+            <class name="com.entertainer.qa.tests.jsonplaceholder.CommentsTests"/>
+        </classes>
+    </test>
+
+</suite>
