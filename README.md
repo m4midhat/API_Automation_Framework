@@ -1,6 +1,8 @@
 # REST API Automation Framework
 
-**Author:** Midhat Rosull Chughtai · **Email:** m4midhat@gmail.com · **GitHub:** github.com/m4midhat
+**Author:** Midhat Rosull Chughtai · 
+**Email:** m4midhat@gmail.com · 
+**GitHub:** github.com/m4midhat
 **Purpose:** API test cases reporting
 
 A RestAssured + TestNG API test automation framework built against open-source, public sandbox
