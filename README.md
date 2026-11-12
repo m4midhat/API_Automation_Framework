@@ -47,6 +47,7 @@ returns 418 regardless of load - both are handled by this framework already.
 - **TestNG** - test runner, data providers, retry analyzer, parallel execution
 - **Allure** (`allure-testng`, `allure-rest-assured`) - HTML test report with request/response
   capture per step
+- **ExtentReports** (`extentreports`, Spark reporter) - second, standalone HTML test report
 - **Jackson** - request/response POJO (de)serialization
 - AES-256-GCM via the JDK's own `javax.crypto` - credential encryption at rest (no third-party
   crypto library)
@@ -61,8 +62,9 @@ src/main/java/com/entertainer/qa/
   clients/      BaseApiClient, ReqResClient, BookerClient, JsonPlaceholderClient
   models/       Request/response POJOs, one package per API
   utils/        TestDataFactory        - unique request payload generation
+  reporting/    ExtentManager          - ExtentReports instance + per-thread test node
   listeners/    RetryAnalyzer, RetryAnnotationTransformer, SuiteLifecycleListener,
-                TestExecutionListener
+                TestExecutionListener, ExtentReportListener
 
 src/test/java/com/entertainer/qa/
   base/         BaseTest               - shared client wiring + Booker auth helper
@@ -106,8 +108,9 @@ runner, or `java org.testng.TestNG testng.xml` directly:
 |---|---|---|
 | `AllureTestNg` | - | Allure result generation (library-provided) |
 | `RetryAnnotationTransformer` | `IAnnotationTransformer` | wires `RetryAnalyzer` onto every `@Test` automatically |
-| `SuiteLifecycleListener` | `ISuiteListener` | suite start/finish logging + writes Allure's `environment.properties` |
-| `TestExecutionListener` | `ITestListener` | per-test start/pass/fail/skip console logging, useful in CI logs before the Allure report is opened |
+| `SuiteLifecycleListener` | `ISuiteListener` | suite start/finish logging, writes Allure's `environment.properties`, flushes the ExtentReports HTML |
+| `TestExecutionListener` | `ITestListener` | per-test start/pass/fail/skip console logging, useful in CI logs before either report is opened |
+| `ExtentReportListener` | `ITestListener` | drives the ExtentReports HTML report - one node per test, categorised by API, tagged with the report author |
 
 Note: Maven's `-Dtest=ClassName` shortcut makes Surefire build an ad-hoc suite that bypasses
 `testng.xml` entirely (listeners included) - fine for a quick local spot-check, but always run
@@ -160,7 +163,11 @@ A CI/CD pipeline may instead inject a credential as **plain text** from its own 
 (`-Dbooker.auth.password=$SECRET`); `CredentialManager` uses it as-is since the secret manager has
 already handled encryption at rest.
 
-## Reporting (Allure)
+## Reporting
+
+Every run produces two independent HTML reports:
+
+### Allure
 
 ```bash
 mvn test                 # writes raw results to target/allure-results
@@ -168,16 +175,39 @@ mvn allure:report         # builds the static HTML report in target/site/allure-
 mvn allure:serve          # builds and opens the report in a browser
 ```
 
-Each report records which environment it ran against (via `SuiteLifecycleListener`) and includes
-the full request/response for every API call (via the `AllureRestAssured` filter).
+Records which environment it ran against (via `SuiteLifecycleListener`) and includes the full
+request/response for every API call (via the `AllureRestAssured` filter).
+
+### ExtentReports
+
+```bash
+mvn test                 # also writes target/extent-report/ExtentReport.html directly - open it in a browser, no extra command needed
+```
+
+A single self-contained HTML file (Spark reporter), grouped by API (ReqRes / Restful-Booker /
+JSONPlaceholder via `assignCategory`) with a system-info panel showing:
+
+| Field | Source |
+|---|---|
+| Author, Email, GitHub, Purpose | `report.author`, `report.author.email`, `report.author.github`, `report.purpose` in `config/*.properties` |
+| Environment, base URLs | the same `env`/`*.base.url` values the test run itself used |
+| Test Framework, Java Version, Operating System, Execution Date | gathered automatically at report creation |
+
+Override the output path/title/name/theme the same way as any other config value:
+
+```bash
+mvn test -Dextent.report.path=target/extent-report/CustomName.html -Dextent.report.theme=dark
+```
 
 ## CI/CD
 
 `Jenkinsfile` and `azure-pipelines.yml` both: install nothing but Maven/JDK, run `mvn test` with
 the environment and encrypted-credential passphrase supplied as pipeline parameters/variables, and
-publish the Allure report as a build artifact. Copy whichever matches your pipeline tool and wire
-in your own credential variables. Both simply invoke `mvn test`, so they pick up `testng.xml`'s
-listeners (and anything else configured there) with no pipeline-side changes required.
+publish both the Allure and ExtentReports HTML reports as build artifacts (the latter needs no
+separate build step - `mvn test` writes it directly). Copy whichever matches your pipeline tool and
+wire in your own credential variables. Both simply invoke `mvn test`, so they pick up
+`testng.xml`'s listeners (and anything else configured there) with no pipeline-side changes
+required beyond what's already there for Extent's output path.
 
 ## Project metadata
 
@@ -185,3 +215,9 @@ listeners (and anything else configured there) with no pipeline-side changes req
 `author.email`, `author.github`, `project.purpose` - plus the conventional convenience flags
 `skipTests` / `maven.test.skip` (toggle from the CLI without editing the file) and
 `project.reporting.outputEncoding` (paired with `project.build.sourceEncoding`).
+
+The same four values are set independently in `config/*.properties` as `report.author`,
+`report.author.email`, `report.author.github`, `report.purpose` - that copy is the one
+`ExtentManager` actually reads at run time (through `ConfigManager`, so it's overridable from the
+CLI/env like everything else), since build-time POM properties aren't available inside the test
+JVM without extra Maven resource filtering this project doesn't otherwise need.

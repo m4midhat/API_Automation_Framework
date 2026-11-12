@@ -53,3 +53,10 @@ steps:
     inputs:
       targetPath: 'target/site/allure-maven-plugin'
       artifact: 'allure-report'
+
+  - task: PublishPipelineArtifact@1
+    condition: always()
+    inputs:
+      # ExtentReports needs no build step - mvn test writes the HTML report directly.
+      targetPath: 'target/extent-report'
+      artifact: 'extent-report'

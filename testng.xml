@@ -14,14 +14,17 @@
         testng.xml` directly.
           - AllureTestNg               : Allure report generation
           - RetryAnnotationTransformer : wires RetryAnalyzer onto every @Test automatically
-          - SuiteLifecycleListener     : suite start/finish logging + Allure environment.properties
+          - SuiteLifecycleListener     : suite start/finish logging, Allure environment.properties,
+                                         and flushing the ExtentReports HTML report
           - TestExecutionListener      : per-test start/pass/fail/skip console logging
+          - ExtentReportListener       : ExtentReports HTML report (second, standalone report)
     -->
     <listeners>
         <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
         <listener class-name="com.entertainer.qa.listeners.RetryAnnotationTransformer"/>
         <listener class-name="com.entertainer.qa.listeners.SuiteLifecycleListener"/>
         <listener class-name="com.entertainer.qa.listeners.TestExecutionListener"/>
+        <listener class-name="com.entertainer.qa.listeners.ExtentReportListener"/>
     </listeners>
 
     <test name="ReqRes API Tests">

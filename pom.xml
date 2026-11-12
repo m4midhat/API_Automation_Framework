@@ -28,6 +28,7 @@
         <rest-assured.version>5.5.1</rest-assured.version>
         <testng.version>7.10.2</testng.version>
         <allure.version>2.29.1</allure.version>
+        <extentreports.version>5.1.2</extentreports.version>
         <jackson.version>2.18.2</jackson.version>
 
         <!-- Default values, overridable from the CLI for local runs and CI/CD pipelines:
@@ -99,6 +100,11 @@
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-rest-assured</artifactId>
             <version>${allure.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.aventstack</groupId>
+            <artifactId>extentreports</artifactId>
+            <version>${extentreports.version}</version>
         </dependency>
     </dependencies>
 

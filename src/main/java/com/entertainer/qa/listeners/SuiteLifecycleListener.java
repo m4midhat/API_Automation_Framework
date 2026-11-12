@@ -1,6 +1,7 @@
 package com.entertainer.qa.listeners;
 
 import com.entertainer.qa.config.ConfigManager;
+import com.entertainer.qa.reporting.ExtentManager;
 import org.testng.ISuite;
 import org.testng.ISuiteListener;
 
@@ -11,9 +12,10 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 /**
- * Writes an Allure {@code environment.properties} file at the start of the run, so every report
- * records which environment and base URLs it actually tested against - useful once the suite is
- * run from multiple CI/CD pipelines against different {@code -Denv} values.
+ * Suite-level bookkeeping for both reports: writes an Allure {@code environment.properties} file
+ * at the start of the run (so every report records which environment and base URLs it actually
+ * tested against - useful once the suite is run from multiple CI/CD pipelines against different
+ * {@code -Denv} values), and flushes the ExtentReports HTML report at the end.
  */
 public class SuiteLifecycleListener implements ISuiteListener {
 
@@ -44,6 +46,9 @@ public class SuiteLifecycleListener implements ISuiteListener {
 
     @Override
     public void onFinish(ISuite suite) {
+        // Fires exactly once for the whole suite (unlike ITestListener.onFinish, which fires once
+        // per <test> tag) - the correct, single place to flush the ExtentReports HTML to disk.
+        ExtentManager.flush();
         System.out.println("=== " + suite.getName() + " finished ===");
     }
 

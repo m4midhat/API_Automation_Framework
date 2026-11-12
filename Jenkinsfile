@@ -45,6 +45,8 @@ pipeline {
         always {
             junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
             archiveArtifacts artifacts: 'target/site/allure-maven-plugin/**', allowEmptyArchive: true
+            // ExtentReports needs no build step - mvn test writes the HTML report directly.
+            archiveArtifacts artifacts: 'target/extent-report/**', allowEmptyArchive: true
         }
     }
 }
